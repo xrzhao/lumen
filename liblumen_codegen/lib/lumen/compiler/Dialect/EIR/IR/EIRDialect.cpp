@@ -32,7 +32,6 @@ EirDialect::EirDialect(mlir::MLIRContext *ctx)
            ListType,
            NumberType,
            IntegerType,
-           BinaryType,
            AtomType,
            BooleanType,
            FixnumType,
