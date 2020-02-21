@@ -20,7 +20,4 @@ void LLVMLumenSetLLVMOptions(int argc, char **argv) {
 
   mlir::registerPassManagerCLOptions();
   llvm::cl::ParseCommandLineOptions(argc, argv);
-
-  // Register the EIR dialect with MLIR
-  mlir::registerDialect<eir::EirDialect>();
 }
