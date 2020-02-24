@@ -200,7 +200,7 @@ MLIRModuleBuilderRef MLIRCreateModuleBuilder(MLIRContextRef context,
 ModuleBuilder::ModuleBuilder(MLIRContext &context, StringRef name, const TargetMachine *targetMachine)
   : builder(&context), targetMachine(targetMachine) {
   // Create an empty module into which we can codegen functions
-  theModule = builder.create<mlir::ModuleOp>(builder.getUnknownLoc(), name);
+  theModule = mlir::ModuleOp::create(builder.getUnknownLoc(), name);
 }
 
 extern "C"
