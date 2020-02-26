@@ -115,7 +115,7 @@ def eir_HeapBinType : eir_TermType<eir_TK_HeapBin, "heapbin term">;
 def eir_ProcBinType : eir_TermType<eir_TK_ProcBin, "procbin term">;
 def eir_BoxType : eir_TermType<eir_TK_Box, "boxed term">;
 
-def eir_AnyTerm : Type<CPred<"$_self.isa<eir::TermType>()">>;
+def eir_AnyTerm : Type<CPred<"$_self.isa<eir::TermType>()">, "any term">;
 def eir_BoolLike : AnyTypeOf<[I1, eir_BoolType]>;
 def eir_FixnumLike : AnyTypeOf<[I32, I64, eir_FixnumType]>;
 def eir_FloatLike : AnyTypeOf<[F64, eir_FixnumType]>;
