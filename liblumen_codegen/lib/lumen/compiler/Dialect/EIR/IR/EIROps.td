@@ -526,7 +526,7 @@ def eir_CondBranchOp : eir_Op<"cond_br", [Terminator]> {
 class eir_CallBaseOp<string mnemonic, list<OpTrait> traits = []> :
     eir_Op<mnemonic, !listconcat(traits, [CallOpInterface])> {
   let extraClassDeclaration = [{
-    StringRef getCallee() { return callee(); }
+    SymbolRefAttr getCallee() { return callee(); }
 
     /// Get the argument operands to the called function.
     operand_range getArgOperands() {
@@ -549,7 +549,7 @@ def eir_CallOp : eir_CallBaseOp<"call"> {
   }];
 
   let arguments = (ins
-    eir_FuncRefAttr:$callee,
+    SymbolRefAttr:$callee,
     Variadic<eir_AnyTerm>:$operands
   );
   let results = (outs
@@ -571,20 +571,13 @@ def eir_CallOp : eir_CallBaseOp<"call"> {
       result.addTypes(callee.getType().getResults());
     }]>,
     OpBuilder<[{
-      Builder *builder, OperationState &result, FlatSymbolRefAttr callee,
+      Builder *builder, OperationState &result, SymbolRefAttr callee,
       ArrayRef<Type> resultTypes, ValueRange operands = {}
     }], [{
       result.addOperands(operands);
       result.addAttribute("callee", callee);
       result.addTypes(resultTypes);
-    }]>,
-    OpBuilder<[{
-      Builder *builder, OperationState &result, StringRef callee,
-      ArrayRef<Type> resultTypes, ValueRange operands = {}
-    }], [{
-      build(builder, result, builder->getSymbolRefAttr(callee),
-            resultTypes, operands);
-    }]>,
+    }]>
   ];
 
   let verifier = [{ /*TODO*/return success(); }];

@@ -208,7 +208,8 @@ public:
   void build_return(Value value);
 
   void build_static_call(
-    StringRef target,
+    StringRef module,
+    StringRef nameArity,
     ArrayRef<Value> args,
     bool isTail,
     Block *ok,

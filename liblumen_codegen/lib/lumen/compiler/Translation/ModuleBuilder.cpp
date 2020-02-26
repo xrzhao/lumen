@@ -772,7 +772,8 @@ Value ModuleBuilder::build_logical_or(Value lhs, Value rhs) {
 extern "C"
 void MLIRBuildStaticCall(
   MLIRModuleBuilderRef b,
-  const char *name,
+  const char *module,
+  const char *nameArity,
   MLIRValueRef *argv,
   unsigned argc,
   bool isTail,
@@ -786,18 +787,20 @@ void MLIRBuildStaticCall(
   ModuleBuilder *builder = unwrap(b);
   Block *ok = unwrap(okBlock);
   Block *err = unwrap(errBlock);
-  StringRef functionName(name);
+  StringRef moduleStringRef(module);
+  StringRef nameArityStringRef(nameArity);
   SmallVector<Value, 2> args;
   unwrapValues(argv, argc, args);
   SmallVector<Value, 1> okArgs;
   unwrapValues(okArgv, okArgc, okArgs);
   SmallVector<Value, 1> errArgs;
   unwrapValues(errArgv, errArgc, errArgs);
-  builder->build_static_call(functionName, args, isTail, ok, okArgs, err, errArgs);
+  builder->build_static_call(moduleStringRef, nameArityStringRef, args, isTail, ok, okArgs, err, errArgs);
 }
 
 void ModuleBuilder::build_static_call(
-  StringRef target,
+  StringRef module,
+  StringRef nameArity,
   ArrayRef<Value> args,
   bool isTail,
   Block *ok,
@@ -806,28 +809,18 @@ void ModuleBuilder::build_static_call(
   ArrayRef<Value> errArgs
 ) {
   // Create symbolref and lookup function definition (if present)
-  auto symbol = builder.getSymbolRefAttr(target);
-  auto fn = theModule.lookupSymbol<FuncOp>(symbol.getValue());
+  auto symbol = builder.getSymbolRefAttr(module, builder.getSymbolRefAttr(nameArity));
 
   // Build result types list
   SmallVector<Type, 1> fnResults;
-  if (fn) {
-    auto fnType = fn.getType();
-    // Register callee symbol as called
-    calledSymbols.insert(std::make_pair(target, fnType));
-    auto rs = fn.getCallableResults();
-    fnResults.append(rs.begin(), rs.end());
-  } else {
-    auto termType = builder.getType<TermType>();
-    // Register callee symbol as called
-    SmallVector<Type, 1> argTypes;
-    for (auto arg : args) {
-      argTypes.push_back(arg.getType());
-    }
-    auto fnType = builder.getFunctionType(argTypes, {termType});
-    calledSymbols.insert(std::make_pair(target, fnType));
-    fnResults.push_back(termType);
+  auto termType = builder.getType<TermType>();
+  // Register callee symbol as called
+  SmallVector<Type, 1> argTypes;
+  for (auto arg : args) {
+    argTypes.push_back(arg.getType());
   }
+  auto fnType = builder.getFunctionType(argTypes, {termType});
+  fnResults.push_back(termType);
 
   // Build call
   Operation *call = builder.create<CallOp>(builder.getUnknownLoc(), symbol, fnResults, args);

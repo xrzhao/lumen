@@ -807,19 +807,21 @@ void MatchOp::build(Builder *builder, OperationState &result,
         // 2. In the split, call runtime function `is_map_key` to confirm existence of the key in the map,
         //    then conditionally branch to the second split if successful, otherwise the next pattern
         OpBuilder splitBuilder(split);
+        auto hasKeySymbolRefAttr = splitBuilder.getSymbolRefAttr("erlang", splitBuilder.getSymbolRefAttr("is_map_key/2"));
         auto termType = splitBuilder.getType<TermType>();
         ArrayRef<Type> getKeyResultTypes = {termType};
         ArrayRef<Value> getKeyArgs = {key, selector};
-        auto hasKeyOp = splitBuilder.create<CallOp>(result.location, "erlang::is_map_key/2", getKeyResultTypes, getKeyArgs);
+        auto hasKeyOp = splitBuilder.create<CallOp>(result.location, hasKeySymbolRefAttr, getKeyResultTypes, getKeyArgs);
         auto hasKeyCondTerm = hasKeyOp.getResult(0);
         auto toBoolOp = splitBuilder.create<CastOp>(result.location, hasKeyCondTerm, opBuilder.getType<BooleanType>());
         auto hasKeyCond = toBoolOp.getResult();
         blockBuilder.create<CondBranchOp>(result.location, hasKeyCond, split2, emptyArgs, nextPatternBlock, emptyArgs);
         // 3. In the second split, call runtime function `map_get` to obtain the value for the key
         OpBuilder split2Builder(split2);
+        auto mapGetSymbolRefAttr = split2Builder.getSymbolRefAttr("erlang", splitBuilder.getSymbolRefAttr("map_get/2"));
         ArrayRef<Type> mapGetResultTypes = {termType};
         ArrayRef<Value> mapGetArgs = {key, selector};
-        auto mapGetOp = split2Builder.create<CallOp>(result.location, "erlang::map_get/2", mapGetResultTypes, mapGetArgs);
+        auto mapGetOp = split2Builder.create<CallOp>(result.location, mapGetSymbolRefAttr, mapGetResultTypes, mapGetArgs);
         auto valueTerm = mapGetOp.getResult(0);
         // 4. Unconditionally branch to the destination, with the key's value as an additional destArg
         SmallVector<Value, 2> destArgs(baseDestArgs.begin(), baseDestArgs.end());

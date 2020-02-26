@@ -15,7 +15,8 @@ impl CallBuilder {
                 builder.debug(&format!("static call target is {}", ident));
 
                 let is_local = builder.is_current_module(ident.module.name);
-                let name = CString::new(ident.to_string()).unwrap();
+                let module = CString::new(ident.module.to_string()).unwrap();
+                let name = CString::new(format!("{}/{}", ident.name, ident.arity)).unwrap();
                 let args = op
                     .args
                     .iter()
@@ -48,6 +49,7 @@ impl CallBuilder {
                 unsafe {
                     MLIRBuildStaticCall(
                         builder.as_ref(),
+                        module.as_ptr(),
                         name.as_ptr(),
                         args.as_ptr(),
                         args.len() as libc::c_uint,
