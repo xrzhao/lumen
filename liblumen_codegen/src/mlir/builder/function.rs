@@ -190,10 +190,10 @@ pub struct ScopedFunctionBuilder<'f, 'o> {
 #[macro_export]
 macro_rules! debug_in {
     ($this:expr, $format:expr) => {
-        debug!("{}: {}", $this.name(), $format);
+        debug!("{}: {}", $this.ident(), $format);
     };
     ($this:expr, $format:expr, $($arg:expr),+) => {
-        debug!("{}: {}", $this.name(), &format!($format, $($arg),+));
+        debug!("{}: {}", $this.ident(), &format!($format, $($arg),+));
     }
 }
 
@@ -211,14 +211,14 @@ impl<'f, 'o> ScopedFunctionBuilder<'f, 'o> {
 
     /// Returns the current function identifier
     #[inline]
-    pub fn name(&self) -> &FunctionIdent {
-        self.func.name()
+    pub fn ident(&self) -> &FunctionIdent {
+        self.func.ident()
     }
 
     /// Prints debugging messages with the name of the function being built
     #[cfg(debug_assertions)]
     pub(super) fn debug(&self, message: &str) {
-        debug!("{}: {}", self.name(), message);
+        debug!("{}: {}", self.ident(), message);
     }
 
     #[cfg(not(debug_assertions))]
@@ -433,7 +433,7 @@ impl<'f, 'o> ScopedFunctionBuilder<'f, 'o> {
 
     /// Returns true if the given symbol is the same as the current functions' module name
     pub fn is_current_module(&self, m: Symbol) -> bool {
-        self.func.name().module.name == m
+        self.func.ident().module.name == m
     }
 
     /// Returns the current block arguments as values

@@ -22,7 +22,7 @@ use crate::Result;
 
 pub struct Function {
     // MFA of this function
-    name: ir::FunctionIdent,
+    ident: ir::FunctionIdent,
     // Signature of this function
     signature: Signature,
     // Primary storage for blocks
@@ -55,9 +55,9 @@ impl Function {
     /// Initializes this function definition with the given name and signature
     ///
     /// NOTE: This does not construct the function in MLIR
-    pub fn with_name_signature(name: FunctionIdent, signature: Signature) -> Self {
+    pub fn with_name_signature(ident: FunctionIdent, signature: Signature) -> Self {
         Self {
-            name,
+            ident,
             signature,
             blocks: PrimaryMap::new(),
             block_mapping: SecondaryMap::new(),
@@ -105,10 +105,10 @@ impl Function {
 
         debug!(
             "creating function {} with {} parameters and return types {:?}",
-            &self.name, argc, returns,
+            &self.ident, argc, returns,
         );
 
-        let c_name = CString::new(self.name.to_string()).unwrap();
+        let name_arity = CString::new(format!("{}/{}", self.ident.name, self.ident.arity)).unwrap();
         // TODO: support multi-return
         let result_type = returns.get(0).unwrap_or(&Type::Void);
 
@@ -118,7 +118,7 @@ impl Function {
         } = unsafe {
             ffi::MLIRCreateFunction(
                 builder.as_ref(),
-                c_name.as_ptr(),
+                name_arity.as_ptr(),
                 args.as_ptr(),
                 argc as libc::c_uint,
                 result_type,
@@ -127,15 +127,15 @@ impl Function {
         if function.is_null() {
             return Err(anyhow!(
                 "failed to create function {}",
-                c_name.to_string_lossy()
+                name_arity.to_string_lossy()
             ));
         }
 
         // Register function symbol globally
         builder.symbols_mut().insert(FunctionSymbol {
-            module: self.name.module.name.as_usize(),
-            function: self.name.name.name.as_usize(),
-            arity: self.name.arity as u8,
+            module: self.ident.module.name.as_usize(),
+            function: self.ident.name.name.as_usize(),
+            arity: self.ident.arity as u8,
             ptr: ptr::null(),
         });
 
@@ -144,8 +144,8 @@ impl Function {
 
     /// Returns a reference to the current functions' identifier
     #[inline]
-    pub fn name(&self) -> &ir::FunctionIdent {
-        &self.name
+    pub fn ident(&self) -> &ir::FunctionIdent {
+        &self.ident
     }
 
     /// Returns a reference to the current functions' signature
