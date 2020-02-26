@@ -1,5 +1,3 @@
-#![feature(main)]
-
 mod atoms;
 mod symbols;
 
@@ -14,13 +12,17 @@ extern "C" {
     fn lumen_entry() -> i32;
 }
 
+#[no_mangle]
+pub extern "C" fn main(_argc: isize, _argv: *const *const u8) -> isize {
+    lumen_start() as isize
+}
+
 /// The primary entry point for the Lumen runtime
 ///
 /// This function is responsible for setting up any core functionality required
 /// by the higher-level runtime, e.g. initializing the atom table. Once initialized,
 /// this function invokes the platform-specific entry point which handles starting
 /// up the schedulers and other high-level runtime functionality.
-#[main]
 pub fn lumen_start() -> i32 {
     use crate::atoms::*;
     use crate::symbols::*;
