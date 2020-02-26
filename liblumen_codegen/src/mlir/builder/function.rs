@@ -19,8 +19,8 @@ use libeir_util_datastructures::pooled_entity_set::BoundEntitySet;
 
 use crate::Result;
 
-use liblumen_session::Options;
 use liblumen_core::symbols::FunctionSymbol;
+use liblumen_session::Options;
 
 use super::block::{Block, BlockData};
 use super::ffi::*;
@@ -84,7 +84,16 @@ impl<'a, 'm, 'f> FunctionBuilder<'a, 'm, 'f> {
                 self.with_scope(fi, loc, f, &analysis, data, options)
                     .and_then(|scope| scope.build())?
             };
+            // if format!("{}", &ident) == "init:module_info/0" {
+            //     debug!("SKIPPING ADDING {}", &ident);
+            //     continue;
+            // }
+            debug!("ADDING {}", &ident);
+            unsafe {
+                MLIRDumpFunction(func);
+            }
             unsafe { MLIRAddFunction(self.builder.as_ref(), func) }
+            debug!("ADDED {}", &ident);
         }
 
         Ok(())

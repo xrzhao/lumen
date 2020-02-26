@@ -21,14 +21,15 @@ use log::debug;
 use libeir_intern::Symbol;
 use libeir_ir as ir;
 
-use liblumen_session::Options;
 use liblumen_core::symbols::FunctionSymbol;
+use liblumen_session::Options;
 
-use crate::mlir::{Context, Module};
 use crate::llvm;
+use crate::mlir::{Context, Module};
 use crate::Result;
 
 pub use self::function::{FunctionBuilder, ScopedFunctionBuilder};
+use crate::mlir::builder::ffi::{MLIRBlockPositionAtEnd, MLIRGetCurrentBlock};
 
 pub struct GeneratedModule {
     pub module: Module,
@@ -37,7 +38,12 @@ pub struct GeneratedModule {
 }
 
 /// Constructs an MLIR module from an EIR module, using the provided context and options
-pub fn build(module: &ir::Module, context: &Context, options: &Options, target_machine: &llvm::TargetMachine) -> Result<GeneratedModule> {
+pub fn build(
+    module: &ir::Module,
+    context: &Context,
+    options: &Options,
+    target_machine: &llvm::TargetMachine,
+) -> Result<GeneratedModule> {
     debug!("building mlir module for {}", module.name());
 
     let mut builder = ModuleBuilder::new(module, context, target_machine.as_ref());
@@ -66,12 +72,17 @@ impl<'m> ModuleBuilder<'m> {
     }
 
     /// Creates a new builder for the given EIR module, using the provided MLIR context
-    pub fn new(module: &'m ir::Module, context: &Context, target_machine: llvm::TargetMachineRef) -> Self {
+    pub fn new(
+        module: &'m ir::Module,
+        context: &Context,
+        target_machine: llvm::TargetMachineRef,
+    ) -> Self {
         use ffi::MLIRCreateModuleBuilder;
 
         let name = module.name();
         let c_name = CString::new(name.to_string()).unwrap();
-        let builder = unsafe { MLIRCreateModuleBuilder(context.as_ref(), c_name.as_ptr(), target_machine) };
+        let builder =
+            unsafe { MLIRCreateModuleBuilder(context.as_ref(), c_name.as_ptr(), target_machine) };
 
         let mut atoms = HashSet::new();
         atoms.insert(name.name);
@@ -94,12 +105,18 @@ impl<'m> ModuleBuilder<'m> {
 
         debug!("building mlir module for {}", self.module.name());
 
+        let block = unsafe { ffi::MLIRGetCurrentBlock(self.builder) };
+
         for f in self.module.function_iter() {
             let mut fb = FunctionBuilder::new(f, &mut self);
             fb.build(options)?;
+
+            unsafe { ffi::MLIRBlockPositionAtEnd(self.builder, block) };
         }
 
-        unsafe { ffi::MLIRDumpModule(self.builder); }
+        unsafe {
+            ffi::MLIRDumpModule(self.builder);
+        }
 
         debug!("finished building {}, finalizing..", self.module.name());
 
@@ -109,7 +126,6 @@ impl<'m> ModuleBuilder<'m> {
                 "unexpected error occurred when lowering EIR module"
             ));
         }
-
 
         Ok(GeneratedModule {
             module: Module::new(result),

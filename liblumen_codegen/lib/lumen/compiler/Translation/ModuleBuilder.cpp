@@ -204,6 +204,12 @@ ModuleBuilder::ModuleBuilder(MLIRContext &context, StringRef name, const TargetM
 }
 
 extern "C"
+void MLIRDumpFunction(MLIRFunctionOpRef f) {
+  FuncOp *func_op = unwrap(f);
+  func_op->dump();
+}
+
+extern "C"
 void MLIRDumpModule(MLIRModuleBuilderRef b) {
   ModuleBuilder *builder = unwrap(b);
   builder->dump();
@@ -322,6 +328,12 @@ MLIRValueRef MLIRGetCurrentBlockArgument(MLIRModuleBuilderRef b, unsigned id) {
     Block *block = builder->getBlock();
     assert(block != nullptr);
     return wrap(block->getArgument(id));
+}
+
+extern "C"
+MLIRBlockRef MLIRGetCurrentBlock(MLIRModuleBuilderRef b) {
+    ModuleBuilder *builder = unwrap(b);
+    return wrap(builder->getBlock());
 }
 
 Block *ModuleBuilder::getBlock() {
@@ -506,7 +518,7 @@ void ModuleBuilder::build_match(Match op) {
     MatchBranch branch(dest, destArgs, std::move(pattern));
     branches.push_back(std::move(branch));
   }
-  
+
   // Create the operation using the internal representation
   builder.create<MatchOp>(builder.getUnknownLoc(),
                           selector,

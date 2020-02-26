@@ -282,6 +282,7 @@ extern "C" {
         target_machine: llvm::TargetMachineRef,
     ) -> ModuleBuilderRef;
 
+    pub fn MLIRDumpFunction(functon_op: FunctionOpRef);
     pub fn MLIRDumpModule(builder: ModuleBuilderRef);
 
     pub fn MLIRFinalizeModuleBuilder(builder: ModuleBuilderRef) -> ModuleRef;
@@ -314,6 +315,8 @@ extern "C" {
     //---------------
     // Blocks
     //---------------
+
+    pub fn MLIRGetCurrentBlock(builder: ModuleBuilderRef) -> BlockRef;
 
     pub fn MLIRGetCurrentBlockArgument(builder: ModuleBuilderRef, id: libc::c_uint) -> ValueRef;
 
@@ -443,22 +446,10 @@ extern "C" {
     // Constants
     //---------------
 
-    pub fn MLIRBuildConstantFloat(
-        builder: ModuleBuilderRef,
-        value: f64,
-    ) -> ValueRef;
-    pub fn MLIRBuildFloatAttr(
-        builder: ModuleBuilderRef,
-        value: f64,
-    ) -> AttributeRef;
-    pub fn MLIRBuildConstantInt(
-        builder: ModuleBuilderRef,
-        value: i64,
-    ) -> ValueRef;
-    pub fn MLIRBuildIntAttr(
-        builder: ModuleBuilderRef,
-        value: i64,
-    ) -> AttributeRef;
+    pub fn MLIRBuildConstantFloat(builder: ModuleBuilderRef, value: f64) -> ValueRef;
+    pub fn MLIRBuildFloatAttr(builder: ModuleBuilderRef, value: f64) -> AttributeRef;
+    pub fn MLIRBuildConstantInt(builder: ModuleBuilderRef, value: i64) -> ValueRef;
+    pub fn MLIRBuildIntAttr(builder: ModuleBuilderRef, value: i64) -> AttributeRef;
     pub fn MLIRBuildConstantBigInt(
         builder: ModuleBuilderRef,
         value: *const libc::c_char,
