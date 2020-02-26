@@ -7,7 +7,6 @@ include "lumen/compiler/Dialect/EIR/IR/EIRBase.td"
 
 def eir_FuncOp : eir_Op<"func", [
     IsolatedFromAbove,
-    HasParent<"ModuleOp">,
     FunctionLike,
     CallableOpInterface,
     Symbol,
