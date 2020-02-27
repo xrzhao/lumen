@@ -10,11 +10,11 @@ compile_error!("lumen_rt_minimal is only supported on unix targets!");
 #[macro_use]
 mod macros;
 mod config;
+mod distribution;
 mod logging;
+mod process;
 mod scheduler;
 mod sys;
-mod distribution;
-mod process;
 
 use bus::Bus;
 use log::Level;
@@ -27,10 +27,10 @@ use self::scheduler::Scheduler;
 use self::sys::break_handler::{self, Signal};
 
 #[liblumen_core::entry]
-fn main() -> impl ::std::process::Termination + 'static {
+fn main(args: Vec<String>) -> impl ::std::process::Termination + 'static {
     let name = env!("CARGO_PKG_NAME");
     let version = env!("CARGO_PKG_VERSION");
-    main_internal(name, version, std::env::args().collect())
+    main_internal(name, version, args)
 }
 
 fn main_internal(name: &str, version: &str, argv: Vec<String>) -> Result<(), ()> {
@@ -39,7 +39,6 @@ fn main_internal(name: &str, version: &str, argv: Vec<String>) -> Result<(), ()>
         Ok(config) => config,
         Err(err) => {
             panic!("Config error: {}", err);
-            return Err(());
         }
     };
 

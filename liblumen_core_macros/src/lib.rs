@@ -8,11 +8,13 @@ use proc_macro2::Span;
 
 use quote::quote;
 
-use syn::{parse, parse_macro_input};
-use syn::{Ident, ItemFn, ReturnType, Type, TypeParamBound, TraitBoundModifier, PathSegment, PathArguments};
-use syn::spanned::Spanned;
 use syn::punctuated::Punctuated;
+use syn::spanned::Spanned;
 use syn::token::Colon2;
+use syn::{parse, parse_macro_input};
+use syn::{
+    Ident, ItemFn, PathArguments, PathSegment, ReturnType, TraitBoundModifier, Type, TypeParamBound,
+};
 
 enum EntryOutput {
     Default,
@@ -25,7 +27,7 @@ enum EntryOutput {
 /// Entry point must:
 ///
 /// - Returns `impl ::std::process::Termination + 'static`
-/// - Accept no arguments
+/// - Accept `Vec<&'static str> arguments
 /// - Is not generic
 /// - Has no custom ABI specified
 /// - Is not const
@@ -46,7 +48,6 @@ pub fn entry(args: TokenStream, input: TokenStream) -> TokenStream {
     // check the function signature
     let valid_signature = f.sig.constness.is_none()
         && f.sig.abi.is_none()
-        && f.sig.inputs.is_empty()
         && f.sig.generics.params.is_empty()
         && f.sig.generics.where_clause.is_none()
         && f.sig.variadic.is_none()
@@ -83,18 +84,18 @@ pub fn entry(args: TokenStream, input: TokenStream) -> TokenStream {
                         false
                     }
                 }
-            },
+            }
             ReturnType::Type(_, box Type::Never(_)) => {
                 entry_output = EntryOutput::Never;
                 true
-            },
+            }
             _ => false,
         };
 
     if !valid_signature {
         return parse::Error::new(
             f.span(),
-            "`#[entry]` function must have signature `fn() | fn -> [ ! | impl ::std::process::Termination + 'static]`",
+            "`#[entry]` function must have signature `fn(&'static str) | fn(&'static str) -> [ ! | impl ::std::process::Termination + 'static]`",
         )
         .to_compile_error()
         .into();
@@ -106,30 +107,29 @@ pub fn entry(args: TokenStream, input: TokenStream) -> TokenStream {
             .into();
     }
 
-    let entry_ident = Ident::new(&format!("__lumen_crt_entry_{}", f.sig.ident), Span::call_site());
+    let entry_ident = Ident::new(
+        &format!("__lumen_crt_entry_{}", f.sig.ident),
+        Span::call_site(),
+    );
     let ident = &f.sig.ident;
 
     let entry = match entry_output {
-        EntryOutput::ImplTermination => {
-            quote!(
-                pub unsafe extern "C" fn #entry_ident() -> i32 {
-                    use ::std::process::Termination;
-                    #ident().report()
-                }
-            )
-        }
-        EntryOutput::Never => {
-            quote!(
-                pub unsafe extern "C" fn #entry_ident() -> i32 {
-                    #ident();
-                }
-            )
-        }
+        EntryOutput::ImplTermination => quote!(
+            pub unsafe extern "Rust" fn #entry_ident(args: Vec<String>) -> i32 {
+                use ::std::process::Termination;
+                #ident(args).report()
+            }
+        ),
+        EntryOutput::Never => quote!(
+            pub unsafe extern "Rust" fn #entry_ident(args: Vec<String>) -> i32 {
+                #ident(args);
+            }
+        ),
         EntryOutput::Default => {
             let success_code = libc::EXIT_SUCCESS;
             quote!(
-                pub unsafe extern "C" fn #entry_ident() -> i32 {
-                    #ident();
+                pub unsafe extern "Rust" fn #entry_ident(args: Vec<String>) -> i32 {
+                    #ident(args);
                     #success_code
                 }
             )

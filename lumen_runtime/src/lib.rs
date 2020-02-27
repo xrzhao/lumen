@@ -75,21 +75,21 @@ mod timer;
 /// but for now it is sufficient to just conditionally compile the entry point here
 #[cfg(not(any(test, target_arch = "wasm32")))]
 #[liblumen_core::entry]
-fn main() -> impl ::std::process::Termination + 'static {
+fn main(args: Vec<String>) -> impl ::std::process::Termination + 'static {
     let name = env!("CARGO_PKG_NAME");
     let version = env!("CARGO_PKG_VERSION");
-    main_internal(name, version, std::env::args().collect())
+    main_internal(name, version, args)
 }
 
 #[cfg(not(any(test, target_arch = "wasm32")))]
 fn main_internal(name: &str, version: &str, argv: Vec<String>) -> Result<(), ()> {
-    use std::thread;
-    use bus::Bus;
-    use log::Level;
     use self::config::Config;
     use self::logging::Logger;
-    use self::system::break_handler::{self, Signal};
     use self::scheduler::Scheduler;
+    use self::system::break_handler::{self, Signal};
+    use bus::Bus;
+    use log::Level;
+    use std::thread;
 
     // Load system configuration
     let _config = match Config::from_argv(name.to_string(), version.to_string(), argv) {
@@ -136,7 +136,7 @@ fn main_internal(name: &str, version: &str, argv: Vec<String>) -> Result<(), ()>
                 }
                 // All other signals can be surfaced to other parts of the
                 // system for custom use, e.g. SIGCHLD, SIGALRM, SIGUSR1/2
-                _ => ()
+                _ => (),
             }
         }
         // If the scheduler scheduled a process this cycle, then we're busy
